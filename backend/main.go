@@ -37,6 +37,7 @@ var StatusMap = map[string]StatusMeta{
 
 type Todo struct {
 	TodoId  int    `json:"todoId"`
+	Title   string `json:"title"`
 	Content string `json:"content"`
 	Status  string `json:"status"`
 	Color   string `json:"color"`
@@ -63,8 +64,8 @@ func main() {
 			return err
 		}
 
-		if todo.Content == "" {
-			return c.Status(400).JSON(fiber.Map{"message": "content is required."})
+		if todo.Title == "" {
+			return c.Status(400).JSON(fiber.Map{"message": "Title is required."})
 		}
 
 		if todo.Status == "" {

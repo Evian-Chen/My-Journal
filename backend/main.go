@@ -97,8 +97,8 @@ func main() {
 
 	app.Get("/api/todos", getTodos)
 	app.Post("/api/todo", createTodos)
-	app.Patch("/api/todo/:id", updateTodos)
-	// app.Delete("/api/todo/:id", deleteTodos)
+	app.Patch("/api/todos/:id", updateTodos)
+	// app.Delete("/api/todos/:id", deleteTodos)
 
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))

@@ -29,7 +29,7 @@ onMounted(() => {
       <div class="nav-inner">
         <router-link to="/">Home - My Journal</router-link>
         <span class="divider">|</span>
-        <router-link to="/about">Journal</router-link>
+        <router-link to="/journal">Journal</router-link>
         <span class="divider">|</span>
         <router-link to="/todolist">To Do List</router-link>
         <button

@@ -72,6 +72,7 @@ async function deleteTodo(id) {
   }
 }
 
+
 async function loadInAllTodos() {
   // 載入所有todolist
   try {
@@ -94,7 +95,7 @@ onMounted(async () => {
     <div class="add-todo">
       <div class="header">
         <div class="actions">
-          <button class="primary add-btn" @click="toggleAddTodo()">
+          <button class="primary add-btn" @click="toggleAddTodo">
             新增一筆代辦事項
           </button>
         </div>
@@ -138,7 +139,7 @@ onMounted(async () => {
           <h1>沒有任何代辦事項</h1>
         </div>
         <div v-else class="list-grid">
-          <div v-for="(todo, index) in todos" :key="todo.todoId ?? index">
+          <div v-for="(todo, index) in todos" :key="index">
             <ToDoCard :todo="todo" @deleteTodo="deleteTodo" />
           </div>
         </div>

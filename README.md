@@ -18,7 +18,7 @@
 
 ---
 
-# 🌟 一、產品使用情境（User Scenario）
+# 🌟 一、產品使用情境
 
 使用者每天打開系統可以：
 
@@ -35,9 +35,9 @@
 
 ---
 
-# 🌟 二、主要功能整理（FRD）
+# 🌟 二、主要功能整理
 
-## ✔ 1. 使用者系統（User）
+## 1. 使用者系統（User）
 
 * 註冊
 * 登入
@@ -46,7 +46,7 @@
 
 ---
 
-## ✔ 2. 日記系統（Journal）
+## 2. 日記系統（Journal）
 
 每篇日記包含：
 
@@ -67,7 +67,7 @@
 
 ---
 
-## ✔ 3. Todo 系統（Todo List）
+## 3. Todo 系統（Todo List）
 
 每個 Todo 包含：
 
@@ -89,283 +89,3 @@ Todo 功能：
 Todo 不需搜尋系統（日記才有）
 
 ---
-
-# 🌟 三、前端（Vue）視覺架構
-
-```
-----------------------------------------
-|  Personal Journal & Todo Manager     |
-----------------------------------------
-|   [ Journal ]   [ Todo ]             |
-----------------------------------------
-```
-
-## 【Tab 1：Journal（日記）】
-
-UI：
-
-* 日期選擇器（預設今天）
-* 標題欄位
-* 內容 textarea
-* 標籤選擇器（chips）
-* 心情 emoji
-* 「儲存」 / 「刪除」
-
-## 【Tab 2：Todo】
-
-UI：
-
-* “新增代辦” 輸入框
-* 待辦清單 (checkbox + item)
-* 排序（選做）
-* 完成顯示灰色
-
----
-
-# 🌟 四、MongoDB 資料模型（Model）
-
----
-
-## 1. User
-
-```
-User {
-  _id: ObjectId
-  email: string
-  passwordHash: string
-  createdAt: time
-}
-```
-
----
-
-## 2. Diary
-
-```
-Diary {
-  _id: ObjectId
-  userId: ObjectId
-  title: string
-  content: string
-  tags: [string]
-  mood: string (happy | neutral | sad)
-  date: string (YYYY-MM-DD)
-  createdAt: time
-  updatedAt: time
-}
-```
-
----
-
-## 3. Todo
-
-```
-Todo {
-  _id: ObjectId
-  userId: ObjectId
-  content: string
-  done: bool
-  date: string (YYYY-MM-DD)
-  createdAt: time
-}
-```
-
----
-
-# 🌟 五、API 設計（更新版本）
-
-## 🔐 Auth
-
-### POST /api/auth/signup
-
-### POST /api/auth/login
-
-### GET /api/auth/me
-
-（不變）
-
----
-
-# 📘 Journal（日記 API）
-
-## 1. POST /api/diaries
-
-Body：
-
-```json
-{
-  "title": "今天心情不錯",
-  "content": "寫了很多程式。",
-  "tags": ["life"],
-  "mood": "happy",
-  "date": "2025-02-21"
-}
-```
-
----
-
-## 2. GET /api/diaries?keyword=&tags=&mood=&start=&end=
-
-支援搜尋
-
----
-
-## 3. GET /api/diaries/:id
-
-## 4. PUT /api/diaries/:id
-
-## 5. DELETE /api/diaries/:id
-
-（與舊版相同）
-
----
-
-# 📗 Todo（代辦 API）⭐新加的
-
-## 1. POST /api/todos
-
-Body：
-
-```json
-{
-  "content": "寫日記系統後端",
-  "date": "2025-02-21"
-}
-```
-
-回應：
-
-```json
-{
-  "id": "abc123",
-  "content": "寫日記系統後端",
-  "done": false,
-  "date": "2025-02-21"
-}
-```
-
----
-
-## 2. GET /api/todos?date=2025-02-21
-
-回傳：
-
-```json
-{
-  "items": [
-    { "id": "1", "content": "買牛奶", "done": false },
-    { "id": "2", "content": "寫Go練習", "done": true }
-  ]
-}
-```
-
----
-
-## 3. PATCH /api/todos/:id
-
-Body：
-
-```json
-{
-  "done": true
-}
-```
-
-或
-
-```json
-{
-  "content": "重寫代辦"
-}
-```
-
----
-
-## 4. DELETE /api/todos/:id
-
----
-
-# 🌟 六、後端架構（更新）
-
-```
-backend/
-│── cmd/
-│   └── server/main.go
-│
-│── internal/
-│   ├── controllers/
-│   │   ├── diary_controller.go
-│   │   └── todo_controller.go   # ⭐新加
-│   │
-│   ├── services/
-│   │   ├── diary_service.go
-│   │   └── todo_service.go      # ⭐新加
-│   │
-│   ├── repositories/
-│   │   ├── diary_repository.go
-│   │   ├── todo_repository.go   # ⭐新加
-│   │   └── mongo/
-│   │       ├── diary_mongo.go
-│   │       └── todo_mongo.go    # ⭐新加
-│   │
-│   ├── models/
-│   │   ├── diary.go
-│   │   └── todo.go               # ⭐新加
-│   │
-│   ├── middleware/
-│   └── config/
-│
-└── go.mod
-```
-
-Todo 會遵循同樣 architecture。
-
----
-
-# 🌟 七、前端（Vue）架構（更新）
-
-```
-frontend/
-│── src/
-│   ├── pages/
-│   │   ├── JournalTab.vue
-│   │   └── TodoTab.vue     # ⭐新加 
-│   │
-│   ├── components/
-│   │   ├── TodoItem.vue    # ⭐新加
-│   │   └── DiaryEditor.vue
-│   │
-│   ├── api/
-│   │   ├── diary.js
-│   │   └── todo.js         # ⭐新加
-│   │
-│   ├── router/
-│   └── App.vue  ← 裡面兩個 Tab
-```
-
----
-
-# 🌟 八、功能整合（前後端）
-
-## Journal Tab 功能
-
-* 顯示日期
-* 載入該日期的日記（如果有）
-* 新增 / 修改 / 刪除日記
-
-## Todo Tab 功能
-
-* 顯示該日期的 Todo 列表
-* 新增 Todo
-* 刪除 Todo
-* 修改 Todo（done / content）
-
----
-
-# 🌟 九、未來擴充（選做）
-
-* Todo 自動生成「今日摘要」推薦放入日記
-* 心情分析（AI）
-* 日記打卡統計
-* Todo 生產力統計
-* Tag cloud（日記標籤雲）

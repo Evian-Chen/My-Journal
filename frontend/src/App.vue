@@ -3,7 +3,6 @@ import HelloWorld from './components/ToDoList.vue'
 import { ref, onMounted } from 'vue'
 
 // TODO: 搞懂 local storage
-// 下一步，先把兩邊串起來，把後端的東西先寫好
 // TODO: 下一步，設計login頁面，使用google
 
 const theme = ref(localStorage.getItem('theme') || 'light')

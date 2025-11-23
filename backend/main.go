@@ -214,7 +214,6 @@ func deleteTodos(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"message": "delete todo successfully!"})
 }
 
-// TODO: delete all
 func deleteAllTodos(c *fiber.Ctx) error {
 	_, err := todoCollection.DeleteMany(context.Background(), bson.M{})
 	if err != nil {

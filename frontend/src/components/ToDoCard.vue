@@ -1,17 +1,35 @@
 <script setup>
-import { ref, defineProps } from "vue";
+import { ref, defineProps, reactive } from "vue";
+import axios from "axios";
 
 const props = defineProps({
   todo: Object,
 });
 
+const newTodo = reactive({
+  _id: props.todo._id,
+  title: props.todo.title,
+  content: props.todo.content,
+  status: props.todo.status,
+  color: props.todo.color,
+  date: props.todo.date,
+});
 const onEdit = ref(false);
 const onDelete = ref(false);
 const showFull = ref(false);
 const statusOptions = ref(["Pending", "In Progress", "Done"]);
 
-function toggleOnEdit() {
-  console.log("toggle edit")
+async function toggleOnEdit() {
+  // 檢查是否有需要更新 todo 內容
+  if (onEdit.value) {
+    if (JSON.stringify(props.todo) !== JSON.stringify(newTodo)) {
+      try {
+        await axios.patch(`/api/todo/${newTodo._id}`, newTodo)
+      } catch (err) {
+        console.log("update todo error: ", err)
+      }
+    } 
+  }
   onEdit.value = !onEdit.value;
 }
 
@@ -21,21 +39,23 @@ function toggleOnDelete() {
 
 function toggleShowFull() {
   showFull.value = !showFull.value;
+  onDelete.value = false
+  onEdit.value = false
 }
 
 // 這個顏色之後會被用在底下
-const color = props.todo.color;
+const color = newTodo.color || (props.todo && props.todo.color);
 </script>
 
 <template>
   <div class="container">
-    <div v-if="onDelete">
+    <div v-if="onDelete" class="confirm-delete">
       <h3>確定要刪除此代辦事項嗎？</h3>
-      <button @click="toggleOnEdit(), $emit('deleteTodo', props.todo._id)">確定</button>
+      <button @click="toggleOnEdit(), $emit('deleteTodo', newTodo._id)">確定</button>
       <button @click="toggleOnDelete">取消</button>
     </div>
 
-    <div v-if="showFull" class="full-view">
+    <div v-if="showFull" class="full-view" :style="{ '--accent': color || 'var(--accent)' }">
       <div class="full-view-header">
         <button @click="toggleShowFull" class="close-btn">✕</button>
         <button class="edit-btn" @click="toggleOnEdit">
@@ -46,14 +66,14 @@ const color = props.todo.color;
 
       <div class="full-view-content">
         <div v-if="onEdit" class="edit-fields">
-          <input class="field" v-model="props.todo.title" placeholder="標題" />
+          <input class="field" v-model="newTodo.title" placeholder="標題" />
           <textarea
             class="field textarea-field"
-            v-model="props.todo.content"
+            v-model="newTodo.content"
             placeholder="內容"
             rows="6"
           ></textarea>
-          <select class="field" v-model="props.todo.status">
+          <select class="field" v-model="newTodo.status">
             <option v-for="(option, index) in statusOptions" :key="index">
               {{ option }}
             </option>
@@ -66,16 +86,14 @@ const color = props.todo.color;
               class="dot"
               :style="{ background: color || 'var(--accent)' }"
             ></div>
-            <h2 class="full-title">{{ props.todo.title || "無標題" }}</h2>
+            <h2 class="full-title">{{ newTodo.title || "無標題" }}</h2>
           </div>
           <div class="content-full">
-            <p class="full-content">{{ props.todo.content || "沒有內容" }}</p>
+            <p class="full-content">{{ newTodo.content || "沒有內容" }}</p>
           </div>
           <div class="meta-info">
-            <span class="status-full">{{ props.todo.status || "未設定" }}</span>
-            <span class="date-info">{{
-              new Date().toLocaleDateString("zh-TW")
-            }}</span>
+            <span class="status-full">{{ newTodo.status || "未設定" }}</span>
+            <span class="date-info">{{ newTodo.date }}</span>
           </div>
         </div>
       </div>
@@ -84,7 +102,7 @@ const color = props.todo.color;
       <button
         @click="toggleShowFull"
         class="todo-card"
-        :style="{ borderLeftColor: color || 'var(--accent)' }"
+        :style="{ borderLeftColor: color || 'var(--accent)', '--accent': color || 'var(--accent)' }"
       >
         <header class="card-head">
           <div class="title-wrap">
@@ -92,31 +110,23 @@ const color = props.todo.color;
               class="dot"
               :style="{ background: color || 'var(--accent)' }"
             ></div>
-            <h3 class="card-title">{{ props.todo.title || "無標題" }}</h3>
+            <h3 class="card-title">{{ newTodo.title || "無標題" }}</h3>
           </div>
-          <button class="edit-btn" @click="toggleOnEdit">
-            {{ onEdit ? "儲存" : "編輯" }}
-          </button>
         </header>
 
         <main class="card-body">
           <div v-if="onEdit" class="edit-fields">
             <input
               class="field"
-              v-model="props.todo.title"
+              v-model="newTodo.title"
               placeholder="標題"
             />
             <input
               class="field"
-              v-model="props.todo.content"
+              v-model="newTodo.content"
               placeholder="內容"
             />
-            <input
-              class="field"
-              v-model="props.todo.status"
-              placeholder="狀態"
-            />
-            <select class="field" v-model="props.todo.status">
+            <select class="field" v-model="newTodo.status">
               <option v-for="(option, index) in statusOptions" :key="index">
                 {{ option }}
               </option>
@@ -125,8 +135,11 @@ const color = props.todo.color;
 
           <div v-else class="display">
             <!-- 如果 content 最多只顯示十五個字 -->
-            <p class="content">{{ props.todo.content || "沒有內容" }}</p>
-            <span class="status">{{ props.todo.status || "未設定" }}</span>
+            <p class="content">{{ (newTodo.content || '').substring(0, 20) || "沒有內容" }}</p>
+            <div class="meta-info">
+              <span class="status">{{ newTodo.status || "未設定" }}</span>
+              <span class="date-info">{{ newTodo.date }}</span>
+            </div>
           </div>
         </main>
       </button>
@@ -135,6 +148,42 @@ const color = props.todo.color;
 </template>
 
 <style scoped>
+/* reset box-sizing for component to avoid overflow */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ensure top-level button/card fills container and doesn't overflow */
+.todo-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+}
+
+/* inputs should shrink properly inside flex containers */
+.field {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* text/content wrapping to prevent overflow */
+.content,
+.full-content,
+.card-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ensure full view also respects width and doesn't overflow */
+.full-view {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 /* 基本色階與按鈕變數 */
 .todo-card {
   --card-bg: #ffffff;
@@ -174,6 +223,49 @@ const color = props.todo.color;
   --btn-hover-text: #001021; /* 深色主題 hover 後用深色文字（與淺色背景搭配） */
   --danger: #f87171; /* 微調 danger 以便在深色中顯示良好 */
   --danger-contrast: #08121a;
+}
+
+/* 確認刪除區塊的按鈕：主題感知且對比友善 */
+.confirm-delete {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.confirm-delete h3 {
+  margin: 0 8px 0 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.confirm-delete button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* 確認按鈕使用 danger 變數，取消按鈕使用次要樣式 */
+.confirm-delete button:first-of-type {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-contrast);
+}
+
+.confirm-delete button:last-of-type:hover {
+  background: var(--btn-bg-hover);
+  color: var(--btn-hover-text);
+  border-color: var(--btn-bg-hover);
+}
+
+.confirm-delete button:first-of-type:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 
 .todo-card {

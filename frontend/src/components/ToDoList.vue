@@ -1,97 +1,102 @@
 <script setup>
-import { ref, onMounted, warn } from 'vue';
-import ToDoCard from './ToDoCard.vue';
-import axios from 'axios';
+import { ref, onMounted } from "vue";
+import ToDoCard from "./ToDoCard.vue";
+import axios from "axios";
+import { useRouter } from "vue-router";
 
-const onInputTodo = ref(false)
-const cancelAlert = ref(false)
-const warning = ref("")
+defineEmits(["deleteTodo"]);
+
+const router = useRouter();
+const onInputTodo = ref(false);
+const cancelAlert = ref(false);
+const warning = ref("");
 const todo = ref({
-    title: "",
-    content: "",
-    status: ""
-})
-const todos = ref([
-    {
-        todoId: 1, 
-        title: "temp title",
-        content: "temp content",
-        status: "temp status",
-        color: "#000000"
-    }
-])
+  title: "",
+  content: "",
+  status: "",
+});
+const todos = ref([]);
 
 function toggleAddTodo() {
-    onInputTodo.value = !onInputTodo.value
-    warning.value = ""
-    cancelAlert.value = false
+  onInputTodo.value = !onInputTodo.value;
+  warning.value = "";
+  cancelAlert.value = false;
 }
 
 function cancelAddaddTodo() {
-    // 先檢查todo有沒有東西，有東西會警告要儲存草稿還是直接取消
-    if (todo.value.title || todo.value.content || todo.value.status) {
-        // 有任何一個是有被填寫的
-        cancelAlert.value = true
-    } else {
-        toggleAddTodo()
-    }
+  // 先檢查todo有沒有東西，有東西會警告要儲存草稿還是直接取消
+  if (todo.value.title || todo.value.content || todo.value.status) {
+    // 有任何一個是有被填寫的
+    cancelAlert.value = true;
+  } else {
+    toggleAddTodo();
+  }
 }
 
 function notSaveTodo() {
-    todo.value = {
-        title: "",
-        content: "",
-        status: ""
-    }
-    cancelAlert.value = false
-    toggleAddTodo()
+  todo.value = {
+    title: "",
+    content: "",
+    status: "",
+  };
+  cancelAlert.value = false;
+  toggleAddTodo();
 }
 
 async function addTodo() {
-    try {
-        if (todo.value.title === "") {
-            warning.value = "此欄位必填"
-            return
-        }
-
-        const res = await axios.post("api/todo", {
-            title: todo.value.title,
-            content: todo.value.content,
-            status: todo.value.status
-        })
-        toggleAddTodo()
-        loadInAllTodos()
-    } catch (err) {
-        console.log("addTodo frontend error: ", err)
+  try {
+    if (todo.value.title === "") {
+      warning.value = "此欄位必填";
+      return;
     }
+
+    const res = await axios.post("api/todo", {
+      title: todo.value.title,
+      content: todo.value.content,
+      status: todo.value.status,
+    });
+    toggleAddTodo();
+    loadInAllTodos();
+  } catch (err) {
+    console.log("addTodo frontend error: ", err);
+  }
+}
+
+async function deleteTodo(id) {
+  try {
+    const res = await axios.delete(`/api/todo/${id}`);
+    // reload page
+    router.go();
+  } catch (err) {
+    console.log("err: ", err);
+  }
 }
 
 async function loadInAllTodos() {
-    // 載入所有todolist
-    try {
-        // 更新這邊的todos
-        const res = await axios.get("api/todo")
-        todos.value = res.data
-        console.log("get all todolist: ", res)
-    } catch (err) {
-        console.log("addTodoList.vue onmounted frontend error: ", err)
-    }
+  // 載入所有todolist
+  try {
+    const res = await axios.get("api/todos");
+    todos.value = res.data;
+  } catch (err) {
+    console.log("addTodoList.vue onmounted frontend error: ", err);
+  }
 }
 
+// TODO
 onMounted(async () => {
-    loadInAllTodos()
-})
+  // 重新載入的時候太慢了，總是會出現「沒有任何代辦事項」
+  loadInAllTodos();
+});
 </script>
 
 <template>
   <div class="todolist-root">
     <div class="add-todo">
       <div class="header">
-        <h1 class="page-title">Hello from the todolist page</h1>
         <div class="actions">
           <button class="primary add-btn" @click="toggleAddTodo()">
             新增一筆代辦事項
-        </button>
+          </button>
         </div>
       </div>
     </div>
@@ -121,11 +126,11 @@ onMounted(async () => {
         </div>
 
         <div v-if="cancelAlert" class="cancel-alert">
-            <h3>你要儲存目前編輯嗎？</h3>
-            <div class="row">
-              <button class="primary" @click="toggleAddTodo()">儲存進度</button>
-              <button class="danger" @click="notSaveTodo">刪除進度</button>
-            </div>
+          <h3>你要儲存目前編輯嗎？</h3>
+          <div class="row">
+            <button class="primary" @click="toggleAddTodo()">儲存進度</button>
+            <button class="danger" @click="notSaveTodo">刪除進度</button>
+          </div>
         </div>
       </div>
       <div v-else>
@@ -134,7 +139,7 @@ onMounted(async () => {
         </div>
         <div v-else class="list-grid">
           <div v-for="(todo, index) in todos" :key="todo.todoId ?? index">
-            <ToDoCard :todo="todo" />
+            <ToDoCard :todo="todo" @deleteTodo="deleteTodo" />
           </div>
         </div>
       </div>
@@ -277,7 +282,7 @@ onMounted(async () => {
 }
 
 .warning {
-    color:#ef4444;
+  color: #ef4444;
 }
 
 .input-panel {
@@ -361,7 +366,7 @@ onMounted(async () => {
   .todolist-root {
     padding: 14px;
   }
-  
+
   .list-grid {
     grid-template-columns: 1fr;
   }

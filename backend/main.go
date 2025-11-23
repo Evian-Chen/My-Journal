@@ -50,8 +50,8 @@ type Todo struct {
 	Date    string             `json:"date" bson:"date"` // 2024-01-02
 }
 
-// pointer to mongo todo_collection
-var todo_collection *mongo.Collection
+// pointer to mongo todoCollection
+var todoCollection *mongo.Collection
 
 func main() {
 	fmt.Println("APP waking up...")
@@ -79,7 +79,7 @@ func main() {
 
 	fmt.Println("connected to mongo atlas.")
 
-	todo_collection = client.Database("myJournal").Collection("todos")
+	todoCollection = client.Database("myJournal").Collection("todos")
 
 	app := fiber.New()
 
@@ -97,8 +97,9 @@ func main() {
 
 	app.Get("/api/todos", getTodos)
 	app.Post("/api/todo", createTodos)
-	app.Patch("/api/todos/:id", updateTodos)
-	// app.Delete("/api/todos/:id", deleteTodos)
+	app.Patch("/api/todo/:id", updateTodos)
+	app.Delete("/api/todo/:id", deleteTodos)
+	app.Delete("/api/todos", deleteAllTodos)
 
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))
@@ -107,7 +108,7 @@ func main() {
 func getTodos(c *fiber.Ctx) error {
 	var todos []Todo
 
-	cursor, err := todo_collection.Find(context.Background(), bson.M{})
+	cursor, err := todoCollection.Find(context.Background(), bson.M{})
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func createTodos(c *fiber.Ctx) error {
 
 	todo.Date = time.Now().Format("2006-01-02") // 2009-11-10
 
-	insertRes, err := todo_collection.InsertOne(context.Background(), todo)
+	insertRes, err := todoCollection.InsertOne(context.Background(), todo)
 	if err != nil {
 		return err
 	}
@@ -188,7 +189,7 @@ func updateTodos(c *fiber.Ctx) error {
 		"color":   todo.Color,
 		"date":    todo.Date,
 	}}
-	_, err = todo_collection.UpdateOne(context.Background(), filter, update)
+	_, err = todoCollection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "update failed"})
 	}
@@ -196,78 +197,29 @@ func updateTodos(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"message": "update todo successfully!"})
 }
 
-// API withuot DB
-// func main() {
-// 	fmt.Println("Hello world again!")
-// 	app := fiber.New()
+func deleteTodos(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objectID, err := primitive.ObjectIDFromHex((id))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"message": "Invalid ID"})
+	}
 
-// 	todos := map[int]Todo{}
-// 	var todoId int = 1
+	_, err = todoCollection.DeleteOne(context.Background(), bson.M{
+		"_id": objectID,
+	})
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"message": "delete failed"})
+	}
 
-// 	// 回傳全部
-// 	app.Get("/api/todo", func(c *fiber.Ctx) error {
-// 		return c.Status(200).JSON(fiber.Map{"data": todos})
-// 	})
+	return c.Status(200).JSON(fiber.Map{"message": "delete todo successfully!"})
+}
 
-// 	// 新增一筆 todo
-// 	app.Post("/api/todo", func(c *fiber.Ctx) error {
-// 		todo := new(Todo)
-// 		if err := c.BodyParser(todo); err != nil {
-// 			log.Fatal(err)
-// 			return err
-// 		}
+// TODO: delete all
+func deleteAllTodos(c *fiber.Ctx) error {
+	_, err := todoCollection.DeleteMany(context.Background(), bson.M{})
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"message": "delete failed"})
+	}
 
-// 		if todo.Title == "" {
-// 			return c.Status(400).JSON(fiber.Map{"message": "Title is required."})
-// 		}
-
-// 		if todo.Status == "" {
-// 			todo.Status = StatusMap[StatusPending].Label
-// 			todo.Color = StatusMap[StatusPending].Color
-// 		} else {
-// 			todo.Color = StatusMap[todo.Status].Color
-// 		}
-// 		todo.Date = time.Now().Format("2006-01-02") // 2009-11-10
-// 		todo.TodoId = todoId
-// 		todos[todoId] = *todo
-// 		todoId++
-// 		return c.Status(201).JSON(fiber.Map{"message": "create todo successfully!", "data": (todo)})
-// 	})
-
-// 	// 更新一筆 todo
-// 	app.Patch("/api/todo/:todoId", func(c *fiber.Ctx) error {
-// 		todoId := c.Params("todoId")
-// 		id, _ := strconv.Atoi(todoId)
-
-// 		_, exist := todos[id]
-// 		if !exist {
-// 			return c.Status(404).JSON(fiber.Map{"error": "index not found"})
-// 		}
-
-// 		newTodo := new(Todo)
-// 		if err := c.BodyParser(newTodo); err != nil {
-// 			log.Fatal(err)
-// 			return err
-// 		}
-
-// 		todos[id] = *newTodo
-// 		return c.Status(201).JSON(fiber.Map{"message": "create todo successfully!", "data": (todos[id])})
-// 	})
-
-// 	// 刪除一筆 todo
-// 	app.Delete(("api/todo/:todoId"), func(c *fiber.Ctx) error {
-// 		todoId := c.Params("todoId")
-// 		id, _ := strconv.Atoi(todoId)
-
-// 		// 刪除，不使用database
-// 		_, exist := todos[id]
-// 		if !exist {
-// 			return c.Status(404).JSON(fiber.Map{"error": "todo not found"})
-// 		}
-
-// 		delete(todos, id)
-// 		return c.Status(200).JSON(fiber.Map{"message": "todo deleted successfully!"})
-// 	})
-
-// 	log.Fatal(app.Listen(":3000"))
-// }
+	return c.Status(200).JSON(fiber.Map{"message": "delete all todo successfully!"})
+}
